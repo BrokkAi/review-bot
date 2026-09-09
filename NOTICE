@@ -1,0 +1,9 @@
+Brokk Review Bot
+Copyright 2026 Brokk.ai and contributors
+
+This project is licensed under the Apache License, Version 2.0.
+See LICENSE for the full terms. Third-party terms and attribution are
+provided in licenses/THIRD_PARTY_NOTICES.txt.
+
+Repository, process, terminal, and packaging foundations are adapted from
+BrokkAi/bug-bot and BrokkAi/issue-bot, also licensed under Apache-2.0.

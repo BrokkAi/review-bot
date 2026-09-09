@@ -1,0 +1,16 @@
+{
+  "remote": "https://github.com/OWNER/REPO.git",
+  "branch": "master",
+  "directory": "var/worktrees",
+  "state_directory": "var/state",
+  "github": {"host": "github.com"},
+  "agent": {"command": ["codex-acp"]},
+  "poll": "5m",
+  "timeout": "2h",
+  "retry_delay": "15m",
+  "attempts": 3,
+  "max_findings": 10,
+  "labels": [],
+  "exclude_labels": [],
+  "dry_run": false
+}
