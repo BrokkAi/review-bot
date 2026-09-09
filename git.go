@@ -221,7 +221,11 @@ func (g checkout) anchor(ctx context.Context, s Snapshot, f Finding) (bool, erro
 	if err != nil {
 		return false, fmt.Errorf("finding source does not exist: %w", err)
 	}
-	if f.Line > len(strings.Split(source, "\n")) {
+	lineCount := strings.Count(source, "\n")
+	if source != "" && !strings.HasSuffix(source, "\n") {
+		lineCount++
+	}
+	if f.Line > lineCount {
 		return false, errors.New("finding line exceeds source file")
 	}
 	args := []string{"diff", "--no-ext-diff", "--no-textconv", "--no-color", "--find-renames", "--unified=3", s.MergeBase, s.PR.Head.SHA, "--", f.Path}

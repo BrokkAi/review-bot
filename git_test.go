@@ -91,3 +91,20 @@ func TestRenameDeletedAndOutOfDiffLocations(t *testing.T) {
 		}
 	}
 }
+
+func TestFindingCannotPointPastTrailingNewline(t *testing.T) {
+	e, _, f, _, _ := fixture(t)
+	g := checkout{e.config}
+	if err := g.open(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	s, err := g.snapshot(context.Background(), f.prs[0], nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	candidate := finding()
+	candidate.Line = 5
+	if _, err = g.anchor(context.Background(), s, candidate); err == nil {
+		t.Fatal("accepted nonexistent line after final newline")
+	}
+}
