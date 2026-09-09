@@ -50,6 +50,7 @@ jobs:
         with:
           node-version: '24'
           registry-url: https://registry.npmjs.org
+          package-manager-cache: false
       - name: Download the published native assets
         env:
           GH_TOKEN: ${{ github.token }}
@@ -76,6 +77,4 @@ jobs:
           if-no-files-found: error
       - name: Submit validated packages
         if: github.event_name == 'push' || inputs.publish
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: python3 scripts/package_registry.py publish dist/packages

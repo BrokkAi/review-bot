@@ -12,11 +12,25 @@ Its CLI, terminal dashboard, private state, and release tooling follow
 
 ## Install and run
 
-Requires Linux or macOS, Go 1.27.1, Git, authenticated GitHub CLI (`gh`), and an
+Requires Linux or macOS, Git, authenticated GitHub CLI (`gh`), and an
 authenticated ACP coding agent. Codex through `codex-acp` is the default. If the
 adapter is missing, the bot uses `npx --yes @agentclientprotocol/codex-acp`, which
 requires Node.js and may download the adapter on first use. Explicit agent
 commands are used as configured.
+
+```sh
+npm install -g @brokkai/review-bot
+cd /path/to/repository
+brv
+```
+
+You can also install a native release without Node.js or a Go toolchain:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/BrokkAi/review-bot/master/install.sh | sh
+```
+
+To build from source, install Go 1.27.1 and run:
 
 ```sh
 go install github.com/BrokkAi/review-bot/cmd/brv@latest
@@ -169,14 +183,11 @@ terminal fixtures. They do not post live reviews. See
 [CONTRIBUTING.md](CONTRIBUTING.md) for development guidance.
 
 Release tooling builds Linux/macOS amd64/arm64 archives and npm packages under
-`@brokkai/review-bot`. **Native releases and npm publication require the first
-tagged release and publisher setup**; source/Go installation is available first.
-After that release, installation will support:
-
-```sh
-curl -fsSL https://raw.githubusercontent.com/BrokkAi/review-bot/master/install.sh | sh
-npm install -g @brokkai/review-bot
-```
+`@brokkai/review-bot`. Tagged releases publish all four native archives and all
+five npm packages from the same commit. npm publication uses GitHub Actions
+trusted publishing with the `packages-publish` environment and no stored npm
+token. Release archives and packages include the license, notice, and dependency
+license report.
 
 See [RELEASING.md](RELEASING.md) for release checks and trusted publisher setup.
 

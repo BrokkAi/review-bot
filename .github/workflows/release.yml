@@ -27,6 +27,7 @@ jobs:
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e
         with:
           go-version-file: go.mod
+          cache: false
       - name: Package
         env:
           RELEASE_TAG: ${{ github.ref_name }}
