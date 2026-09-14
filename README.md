@@ -156,6 +156,28 @@ Normal session cleanup removes temporary worktrees. A process killed without
 cleanup can leave a worktree in the bot's own workspace; subsequent attempts
 use new worktrees. `status` prints saved state without launching an agent.
 
+## Brokk Town worker service
+
+`brv worker --socket PATH` serves one-shot PR review operations to Brokk
+Town over a private Unix-domain socket. The socket is mode `0600`; the endpoint is
+private to the local service, and the process exits after Town requests shutdown.
+
+Worker protocol v1 uses standard-library HTTP with JSON messages:
+
+- `GET /v1/initialize` returns the protocol range, bot identity, release version,
+  and capabilities. Town requires `exact-revision-review` as well as common `run` and
+  `progress` capabilities.
+- `POST /v1/runs` accepts one strict JSON task and responds with contiguous
+  newline-delimited JSON events: `progress`, optional typed `result`,
+  and `error`, `canceled`, or `complete`.
+- `POST /v1/shutdown` asks the service to stop after the current stream.
+
+Version and capability negotiation happen before work starts. Town does not read
+this bot's private state files; issue and review outcomes are explicit protocol
+results when applicable, while GitHub remains the durable source for receipts.
+The schemas are independent of the Unix HTTP transport, allowing an authenticated
+TLS transport to be added later without changing worker semantics.
+
 ## Optional configuration
 
 `brv --config /path/to/review-bot.json` loads an explicit JSON configuration;
