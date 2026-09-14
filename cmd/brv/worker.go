@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"crypto/sha256"
+	"errors"
 	"flag"
 	"fmt"
 	"log/slog"
@@ -20,6 +21,9 @@ func workerCommand(ctx context.Context, args []string, version string) error {
 	}
 	socket := fs.String("socket", "", "private Unix-domain socket path (required)")
 	if err := fs.Parse(args); err != nil {
+		if errors.Is(err, flag.ErrHelp) {
+			return nil
+		}
 		return err
 	}
 	if fs.NArg() != 0 || *socket == "" {
