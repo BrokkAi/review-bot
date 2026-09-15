@@ -402,11 +402,20 @@ func (e *engine) review(ctx context.Context, s *State, j *Job) error {
 		}
 	}
 	confirmed := len(comments) + len(summaryFindings)
+	blocking := 0
+	for _, c := range j.Candidates {
+		if c.BlocksMerge() {
+			blocking++
+		}
+	}
 	body := fmt.Sprintf("## Review-bot\n\nReviewed `%s` against base `%s`.\n\n%s\n\n", j.PR.Head.SHA, j.PR.Base.SHA, j.Summary)
-	if confirmed == 0 {
+	switch {
+	case blocking == 0 && confirmed == 0:
 		body += "No new verified findings. This is a review summary, not an approval.\n"
-	} else {
-		body += fmt.Sprintf("%d verified finding(s); %d inline.\n", confirmed, len(comments))
+	case blocking == 0:
+		body += fmt.Sprintf("No new merge-blocking findings. %d advisory finding(s) below; they do not block a merge. This is a review summary, not an approval.\n", confirmed)
+	default:
+		body += fmt.Sprintf("%d merge-blocking finding(s); %d advisory; %d inline.\n", blocking, confirmed-blocking, len(comments))
 	}
 	if skipped := len(result.Findings) - confirmed; skipped > 0 {
 		body += fmt.Sprintf("%d candidate(s) excluded after independent verification or duplicate comparison.\n", skipped)

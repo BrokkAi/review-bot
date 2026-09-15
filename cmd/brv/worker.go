@@ -59,26 +59,38 @@ func workerCommand(ctx context.Context, args []string, version string) error {
 		if saved == nil {
 			return worker.Result{}, fmt.Errorf("review did not produce a durable result")
 		}
-		result := worker.ReviewResult{Findings: map[string]string{}, ExactBase: request.BaseSHA, ExactHead: request.HeadSHA}
-		for _, job := range saved.Jobs {
-			if job.PR.Number != request.PR || job.DryRun {
-				continue
-			}
-			if job.PR.Head.SHA == request.HeadSHA && job.PR.Base.SHA == request.BaseSHA && job.Status == "submitted" {
-				result.Complete = true
-			}
-			for _, candidate := range job.Candidates {
-				if candidate.Verdict == "invalid" {
-					continue
-				}
-				id := findingID(candidate.Finding.Path + candidate.Finding.Title + candidate.Finding.Trigger)
-				result.Findings[id] = fmt.Sprintf("%s: %s\n%s\nTrigger: %s\nEvidence: %s\nVerifier: %s", candidate.Finding.Path, candidate.Finding.Title, candidate.Finding.Explanation, candidate.Finding.Trigger, strings.Join(candidate.Finding.Evidence, "; "), candidate.Reason)
-			}
-		}
+		complete, findings := reviewFindings(saved.Jobs, request.PR, request.BaseSHA, request.HeadSHA)
+		result := worker.ReviewResult{Findings: findings, ExactBase: request.BaseSHA, ExactHead: request.HeadSHA}
+		result.Complete = complete
 		return worker.Result{Review: &result}, nil
 	}, slog.Default())
 }
 
 func findingID(value string) string {
 	return fmt.Sprintf("%x", sha256.Sum256([]byte(value)))[:24]
+}
+
+// reviewFindings is the merge-blocking judge: only confirmed P1/P2 findings
+// reach Town. Advisory P3 and duplicate, invalid, or uncertain verdicts stay
+// visible on the GitHub review but never block a merge on their own. An empty
+// map means no merge-blocking issues, letting Town certify clean and merge.
+func reviewFindings(jobs []*bot.Job, pr int, base, head string) (bool, map[string]string) {
+	var complete bool
+	findings := map[string]string{}
+	for _, job := range jobs {
+		if job.PR.Number != pr || job.DryRun {
+			continue
+		}
+		if job.PR.Head.SHA == head && job.PR.Base.SHA == base && job.Status == "submitted" {
+			complete = true
+		}
+		for _, candidate := range job.Candidates {
+			if !candidate.BlocksMerge() {
+				continue
+			}
+			id := findingID(candidate.Finding.Path + candidate.Finding.Title + candidate.Finding.Trigger)
+			findings[id] = fmt.Sprintf("[%s] %s: %s\n%s\nTrigger: %s\nEvidence: %s\nVerifier: %s", candidate.Finding.Severity, candidate.Finding.Path, candidate.Finding.Title, candidate.Finding.Explanation, candidate.Finding.Trigger, strings.Join(candidate.Finding.Evidence, "; "), candidate.Reason)
+		}
+	}
+	return complete, findings
 }

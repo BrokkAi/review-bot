@@ -17,6 +17,17 @@ type Candidate struct {
 	Verdict string  `json:"verdict"`
 	Reason  string  `json:"reason"`
 }
+
+// BlocksMerge reports whether a verified candidate is worth blocking a merge
+// over. Only confirmed P1/P2 findings block; P3 is advisory, and
+// duplicate, invalid, or uncertain verdicts never block on their own.
+func (c Candidate) BlocksMerge() bool {
+	if c.Verdict != "confirmed" {
+		return false
+	}
+	return c.Finding.Severity == "P1" || c.Finding.Severity == "P2"
+}
+
 type Job struct {
 	Key        string         `json:"key"`
 	PR         PullRequest    `json:"pr"`

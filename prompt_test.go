@@ -32,6 +32,29 @@ func TestStrictReceiptsAndLocations(t *testing.T) {
 		}
 	}
 }
+func TestMergeBlockingJudge(t *testing.T) {
+	p2 := finding()
+	p2.Severity = "P2"
+	p3 := finding()
+	p3.Severity = "P3"
+	for _, tc := range []struct {
+		name     string
+		cand     Candidate
+		blocking bool
+	}{
+		{"confirmed P1 blocks", Candidate{Finding: finding(), Verdict: "confirmed"}, true},
+		{"confirmed P2 blocks", Candidate{Finding: p2, Verdict: "confirmed"}, true},
+		{"confirmed P3 is advisory", Candidate{Finding: p3, Verdict: "confirmed"}, false},
+		{"duplicate never blocks", Candidate{Finding: finding(), Verdict: "duplicate"}, false},
+		{"uncertain never blocks", Candidate{Finding: finding(), Verdict: "uncertain"}, false},
+		{"invalid never blocks", Candidate{Finding: finding(), Verdict: "invalid"}, false},
+	} {
+		if got := tc.cand.BlocksMerge(); got != tc.blocking {
+			t.Fatalf("%s: BlocksMerge = %t", tc.name, got)
+		}
+	}
+}
+
 func TestVerificationRequiresCompleteDiscussionAndKnownDuplicate(t *testing.T) {
 	d := []Discussion{{ID: "inline:1"}, {ID: "review:2"}}
 	for _, text := range []string{`{"verdict":"confirmed","reason":"proof","checked":["inline:1"]}`, `{"verdict":"confirmed","reason":"proof","checked":["inline:1","inline:1"]}`, `{"verdict":"duplicate","reason":"proof","checked":["inline:1","review:2"],"duplicate":"other"}`} {
