@@ -76,6 +76,9 @@ the live review for that revision.
    security, data loss, or demonstrated performance regressions. Style,
    speculative concerns, feature requests, and unrelated existing bugs are
    excluded. The default maximum is ten findings, never a quota.
+   P1/P2 mark defects worth blocking a merge over; P3 is advisory and never
+   blocks. The Town worker forwards only confirmed P1/P2 findings, so an
+   advisory-only review lets Town certify clean and merge.
 4. Verify each candidate in a fresh agent session and worktree. Compare its
    cause and triggering conditions against every discussion entry and findings
    already accepted in this batch. Unsupported, uncertain, and duplicate

@@ -47,7 +47,9 @@ func investigationPrompt(snapshot string, maximum int) string {
 	return groundRules + fmt.Sprintf(`
 Read the complete JSON snapshot at %s and its listed instruction_files. Inspect the full merge-base-to-head change and surrounding code.
 Review existing discussion to avoid repeating known root causes. Return at most %d findings; this is
-an upper bound, never a quota. Zero findings is a valid outcome. The summary must describe coverage,
+an upper bound, never a quota. Zero findings is a valid outcome, preferred over low-value findings.
+Use P1/P2 only for defects worth blocking a merge over; P3 is advisory and never blocks a merge.
+Do not inflate severity to fill the bound. The summary must describe coverage,
 checks performed and limitations, not claim that candidate findings are independently verified.
 Use current repository-relative changed file paths. Anchor to the smallest relevant line in the diff.
 For removed code use side LEFT and the merge-base line number, otherwise RIGHT and the head line number.
@@ -63,6 +65,8 @@ Compare root cause and triggering behavior against EVERY supplied discussion ent
 already accepted in this batch. Different wording is not a new finding. A previously reported unchanged
 problem is duplicate; a demonstrated new regression after a fix may be confirmed with an explanation.
 Reject unsupported claims and intended behavior. Return uncertain when the evidence cannot be checked.
+Return invalid when a P1/P2 claim is real but too minor to block a merge; reserve P1/P2 confirmations
+for defects worth blocking a merge over.
 The checked array must contain every supplied discussion ID exactly once. A duplicate must name one.
 Finish with one JSON object on the last line:
 REVIEW_VERIFY {"verdict":"confirmed|duplicate|invalid|uncertain","reason":"Independent evidence and comparison","checked":[],"duplicate":""}
