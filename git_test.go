@@ -108,3 +108,24 @@ func TestFindingCannotPointPastTrailingNewline(t *testing.T) {
 		t.Fatal("accepted nonexistent line after final newline")
 	}
 }
+
+func TestSnapshotUsesReportedBaseWhenTargetBranchAdvanced(t *testing.T) {
+	e, _, f, _, source := fixture(t)
+	p := f.prs[0]
+	localGit(t, source, "switch", "--detach", p.Base.SHA)
+	writeTestFile(t, filepath.Join(source, "unrelated.txt"), "target branch advanced\n")
+	localGit(t, source, "add", "unrelated.txt")
+	localGit(t, source, "commit", "-m", "advance target branch")
+	localGit(t, source, "push", "origin", "HEAD:refs/heads/main")
+	g := checkout{e.config}
+	if err := g.open(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	snapshot, err := g.snapshot(context.Background(), p, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if snapshot.MergeBase != p.Base.SHA || len(snapshot.Changes) != 1 || snapshot.Changes[0].Path != "calc.go" {
+		t.Fatalf("wrong revision reviewed: %+v", snapshot)
+	}
+}

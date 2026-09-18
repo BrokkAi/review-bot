@@ -59,26 +59,35 @@ func workerCommand(ctx context.Context, args []string, version string) error {
 		if saved == nil {
 			return worker.Result{}, fmt.Errorf("review did not produce a durable result")
 		}
-		result := worker.ReviewResult{Findings: map[string]string{}, ExactBase: request.BaseSHA, ExactHead: request.HeadSHA}
-		for _, job := range saved.Jobs {
-			if job.PR.Number != request.PR || job.DryRun {
-				continue
-			}
-			if job.PR.Head.SHA == request.HeadSHA && job.PR.Base.SHA == request.BaseSHA && job.Status == "submitted" {
-				result.Complete = true
-			}
-			for _, candidate := range job.Candidates {
-				if candidate.Verdict == "invalid" {
-					continue
-				}
-				id := findingID(candidate.Finding.Path + candidate.Finding.Title + candidate.Finding.Trigger)
-				result.Findings[id] = fmt.Sprintf("%s: %s\n%s\nTrigger: %s\nEvidence: %s\nVerifier: %s", candidate.Finding.Path, candidate.Finding.Title, candidate.Finding.Explanation, candidate.Finding.Trigger, strings.Join(candidate.Finding.Evidence, "; "), candidate.Reason)
-			}
-		}
+		result := reviewResult(saved, request)
 		return worker.Result{Review: &result}, nil
 	}, slog.Default())
 }
 
 func findingID(value string) string {
 	return fmt.Sprintf("%x", sha256.Sum256([]byte(value)))[:24]
+}
+
+// reviewResult only certifies a submitted review of the requested revision.
+// Other revisions' findings must never be attributed to this dispatch.
+func reviewResult(saved *bot.State, request worker.Request) worker.ReviewResult {
+	result := worker.ReviewResult{Status: "stale", Detail: "No submitted review matches the requested revision; refresh PR eligibility and revisions", Findings: map[string]string{}, ExactBase: request.BaseSHA, ExactHead: request.HeadSHA}
+	for _, job := range saved.Jobs {
+		if job.PR.Number != request.PR || job.DryRun || job.PR.Head.SHA != request.HeadSHA || job.PR.Base.SHA != request.BaseSHA {
+			continue
+		}
+		result.Status, result.Detail = job.Status, job.Failure
+		if job.Status != "submitted" {
+			continue
+		}
+		result.Complete = true
+		for _, candidate := range job.Candidates {
+			if candidate.Verdict == "invalid" {
+				continue
+			}
+			id := findingID(candidate.Finding.Path + candidate.Finding.Title + candidate.Finding.Trigger)
+			result.Findings[id] = fmt.Sprintf("%s: %s\n%s\nTrigger: %s\nEvidence: %s\nVerifier: %s", candidate.Finding.Path, candidate.Finding.Title, candidate.Finding.Explanation, candidate.Finding.Trigger, strings.Join(candidate.Finding.Evidence, "; "), candidate.Reason)
+		}
+	}
+	return result
 }

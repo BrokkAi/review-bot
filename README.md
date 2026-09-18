@@ -221,3 +221,13 @@ terms and generated notices included in every package.
 
 Follow the [Code of Conduct](CODE_OF_CONDUCT.md). Report vulnerabilities
 privately as described in [SECURITY.md](SECURITY.md).
+
+### Exact-revision worker recovery
+
+A PR may report a base commit older than the current target branch tip. The
+worker fetches that exact base commit and checks the pull head ref against the
+requested head; it still rechecks GitHub revision and discussion before posting.
+Worker results include a `status` and failure `detail` when no complete review
+is available. Only a submitted review of the exact requested base/head supplies
+findings. A stale result is not a clean review: refresh repository metadata and
+retry only after resolving the reported revision or eligibility problem.

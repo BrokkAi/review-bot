@@ -74,7 +74,13 @@ func (g checkout) snapshot(ctx context.Context, p PullRequest, discussion []Disc
 	s := Snapshot{PR: p, Discussion: discussion, Focus: g.config.Focus, Instructions: g.config.InstructionFiles}
 	baseRef := fmt.Sprintf("refs/review-bot/%d/base", p.Number)
 	headRef := fmt.Sprintf("refs/review-bot/%d/head", p.Number)
-	if _, err := g.git(ctx, "fetch", "--no-tags", "origin", "+refs/heads/"+p.Base.Ref+":"+baseRef, fmt.Sprintf("+refs/pull/%d/head:%s", p.Number, headRef)); err != nil {
+	// GitHub can retain an older base SHA on an open PR after the target
+	// branch advances. Fetch that exact commit, not the current branch tip.
+	// The pull ref must still match the reported head to reject fetch races.
+	if !validCommit(p.Base.SHA) || !validCommit(p.Head.SHA) {
+		return s, errStale
+	}
+	if _, err := g.git(ctx, "fetch", "--no-tags", "origin", "+"+p.Base.SHA+":"+baseRef, fmt.Sprintf("+refs/pull/%d/head:%s", p.Number, headRef)); err != nil {
 		return s, err
 	}
 	for ref, want := range map[string]string{baseRef: p.Base.SHA, headRef: p.Head.SHA} {
