@@ -166,7 +166,9 @@ Worker protocol v1 uses standard-library HTTP with JSON messages:
 
 - `GET /v1/initialize` returns the protocol range, bot identity, release version,
   and capabilities. Town requires `exact-revision-review` as well as common `run` and
-  `progress` capabilities.
+  `progress` capabilities. `finding-severity` means the review result carries each
+  confirmed finding's P1, P2 or P3 rating under `severities`, which Town uses to
+  decide whether a second failed review closes the pull request.
 - `POST /v1/runs` accepts one strict JSON task and responds with contiguous
   newline-delimited JSON events: `progress`, optional typed `result`,
   and `error`, `canceled`, or `complete`.

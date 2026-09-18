@@ -31,7 +31,7 @@ func workerCommand(ctx context.Context, args []string, version string) error {
 	}
 	return worker.Serve(ctx, *socket, worker.Initialize{
 		Protocol: worker.ProtocolVersion, MinimumProtocol: worker.MinimumProtocol,
-		Bot: "review-bot", Version: version, Capabilities: []string{"run", "progress", "exact-revision-review"},
+		Bot: "review-bot", Version: version, Capabilities: []string{"run", "progress", "exact-revision-review", "finding-severity"},
 	}, func(ctx context.Context, request worker.Request, progress func(worker.Progress)) (worker.Result, error) {
 		if request.PR < 1 {
 			return worker.Result{}, fmt.Errorf("review worker requires a positive PR number")
@@ -71,7 +71,7 @@ func findingID(value string) string {
 // reviewResult only certifies a submitted review of the requested revision.
 // Other revisions' findings must never be attributed to this dispatch.
 func reviewResult(saved *bot.State, request worker.Request) worker.ReviewResult {
-	result := worker.ReviewResult{Status: "stale", Detail: "No submitted review matches the requested revision; refresh PR eligibility and revisions", Findings: map[string]string{}, ExactBase: request.BaseSHA, ExactHead: request.HeadSHA}
+	result := worker.ReviewResult{Status: "stale", Detail: "No submitted review matches the requested revision; refresh PR eligibility and revisions", Findings: map[string]string{}, Severities: map[string]string{}, ExactBase: request.BaseSHA, ExactHead: request.HeadSHA}
 	for _, job := range saved.Jobs {
 		if job.PR.Number != request.PR || job.DryRun || job.PR.Head.SHA != request.HeadSHA || job.PR.Base.SHA != request.BaseSHA {
 			continue
@@ -86,7 +86,8 @@ func reviewResult(saved *bot.State, request worker.Request) worker.ReviewResult 
 				continue
 			}
 			id := findingID(candidate.Finding.Path + candidate.Finding.Title + candidate.Finding.Trigger)
-			result.Findings[id] = fmt.Sprintf("%s: %s\n%s\nTrigger: %s\nEvidence: %s\nVerifier: %s", candidate.Finding.Path, candidate.Finding.Title, candidate.Finding.Explanation, candidate.Finding.Trigger, strings.Join(candidate.Finding.Evidence, "; "), candidate.Reason)
+			result.Findings[id] = fmt.Sprintf("[%s] %s: %s\n%s\nTrigger: %s\nEvidence: %s\nVerifier: %s", candidate.Finding.Severity, candidate.Finding.Path, candidate.Finding.Title, candidate.Finding.Explanation, candidate.Finding.Trigger, strings.Join(candidate.Finding.Evidence, "; "), candidate.Reason)
+			result.Severities[id] = candidate.Finding.Severity
 		}
 	}
 	return result

@@ -69,12 +69,15 @@ type IssueResult struct {
 }
 
 type ReviewResult struct {
-	Status    string            `json:"status,omitempty"`
-	Detail    string            `json:"detail,omitempty"`
-	Complete  bool              `json:"complete"`
-	Findings  map[string]string `json:"findings,omitempty"`
-	ExactBase string            `json:"exact_base,omitempty"`
-	ExactHead string            `json:"exact_head,omitempty"`
+	Status   string            `json:"status,omitempty"`
+	Detail   string            `json:"detail,omitempty"`
+	Complete bool              `json:"complete"`
+	Findings map[string]string `json:"findings,omitempty"`
+	// Severities carries each finding's P1, P2 or P3 rating under the same ID
+	// as Findings, so Town can apply its close threshold.
+	Severities map[string]string `json:"severities,omitempty"`
+	ExactBase  string            `json:"exact_base,omitempty"`
+	ExactHead  string            `json:"exact_head,omitempty"`
 }
 
 type Result struct {
